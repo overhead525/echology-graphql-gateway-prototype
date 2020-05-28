@@ -9,8 +9,9 @@ admin.initializeApp({
 import { ApolloServer, ApolloError, ValidationError, gql } from 'apollo-server';
 
 const typeDefs = require('./TypeDefs');
+const resolvers = require('./Resolvers');
 
-const server = new ApolloServer({ typeDefs });
+const server = new ApolloServer({ typeDefs, resolvers });
 
 server.listen().then(({ url }) => {
   console.log(`🚀 Server ready at ${url}`);

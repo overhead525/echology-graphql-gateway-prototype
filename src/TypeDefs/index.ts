@@ -28,7 +28,6 @@ const baseTypeDefs = gql`
 
   type UpdateResponse {
     success: Boolean!
-    message: String!
     lead: Lead
   }
 
