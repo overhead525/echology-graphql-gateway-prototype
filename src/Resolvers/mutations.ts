@@ -1,16 +1,33 @@
 import { Lead, RawLead, UpdateResponse } from '../Shared/interfaces';
 import * as admin from 'firebase-admin';
 import { ValidationError, ApolloError } from 'apollo-server';
+import {
+  getProperID,
+  incrementID,
+  checkIfDuplicateLead,
+} from '../Shared/helpers';
 
 const mutationResolvers = {
   Mutation: {
-    async createLead(rawLeadInput: RawLead) {
+    async createLead(_: null, args: { rawLead: RawLead }) {
+      await checkIfDuplicateLead('leads', args.rawLead);
+      const lastID = await getProperID('leads');
       try {
-        const response = await (
-          await admin.firestore().collection('leads').add(rawLeadInput)
-        ).get();
-        const success = response.id ? true : false; // If there is an id, it must've been added by firebase
-        const newLead = response.data() as Lead | undefined;
+        const response = await admin
+          .firestore()
+          .collection('leads')
+          .doc(incrementID(lastID))
+          .set({
+            ...args.rawLead,
+            id: incrementID(lastID),
+          });
+        const success = response.writeTime ? true : false; // If there is an id, it must've been added by firebase
+        const newLeadDoc = await admin
+          .firestore()
+          .collection('leads')
+          .doc(incrementID(lastID))
+          .get();
+        const newLead = newLeadDoc.data() as Lead;
         return (
           ({
             success,
@@ -22,16 +39,24 @@ const mutationResolvers = {
         throw new ApolloError(error);
       }
     },
-    async deleteLead(id: string) {
+    async deleteLead(_: null, args: { id: string }) {
       try {
-        const response = await admin.firestore().doc(`leads/${id}`).delete();
-        const success = response.writeTime ? true : false;
-        return (
-          ({
-            success,
-          } as UpdateResponse) ||
-          new ValidationError('Error: Lead could not be deleted')
-        );
+        const initDoc = await admin.firestore().doc(`leads/${args.id}`).get();
+        if (initDoc.exists) {
+          await admin.firestore().doc(`leads/${args.id}`).delete();
+          const prevDoc = await admin.firestore().doc(`leads/${args.id}`).get();
+          const success = !prevDoc.exists;
+          return (
+            ({
+              success,
+            } as UpdateResponse) ||
+            new ValidationError('Error: Lead could not be deleted')
+          );
+        } else {
+          return new ValidationError(
+            `There is no lead with id: ${args.id} to delete.`
+          );
+        }
       } catch (error) {
         throw new ApolloError(error);
       }
