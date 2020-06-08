@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node lib/src/index.js && cp ./service-account.json lib",
+    "start": "node lib/src/index.js",
     "build": "tsc"
   },
   "keywords": [],
