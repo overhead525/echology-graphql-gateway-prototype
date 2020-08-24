@@ -5,6 +5,7 @@ const serviceAccount = require('../service-account.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
+  databaseURL: 'https://echology-9feb2.firebaseio.com',
 });
 
 // populate('leads');
